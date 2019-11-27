@@ -26,6 +26,8 @@
 #include "../ProcessorGraph/ProcessorGraph.h"
 #include "../../UI/EditorViewport.h"
 #include "../../AccessClass.h"
+#include "../../UI/GraphViewer.h"
+#include "../MessageCenter/MessageCenterEditor.h"
 
 // PipelineSelectorButton::PipelineSelectorButton()
 // 	: DrawableButton ("Selector", DrawableButton::ImageFitted)
@@ -189,9 +191,11 @@ void MergerEditor::mouseDown(const MouseEvent& e)
         } else if (result == eventMerge)
         {
             *eventPtr = !(*eventPtr);
+            CoreServices::updateSignalChain(this);
         } else if (result == continuousMerge)
         {
             *continuousPtr = !(*continuousPtr);
+            CoreServices::updateSignalChain(this);
         }
     }
 

@@ -22,10 +22,24 @@
  */
 
 #include "MainWindow.h"
+#include "UI/UIComponent.h"
+#include "UI/EditorViewport.h"
 #include <stdio.h>
 //-----------------------------------------------------------------------
 
-	MainWindow::MainWindow()
+static inline File getSavedStateDirectory() {
+#if defined(__APPLE__)
+    File dir = File::getSpecialLocation(File::userApplicationDataDirectory).getChildFile("Application Support/open-ephys");
+    if (!dir.isDirectory()) {
+        dir.createDirectory();
+    }
+    return std::move(dir);
+#else
+    return File::getSpecialLocation(File::currentExecutableFile).getParentDirectory();
+#endif
+}
+
+	MainWindow::MainWindow(const File& fileToLoad)
 : DocumentWindow(JUCEApplication::getInstance()->getApplicationName(),
 		Colour(Colours::black),
 		DocumentWindow::allButtons)
@@ -67,14 +81,15 @@
 	setVisible(true);
 
 	// Constraining the window's size doesn't seem to work:
-	setResizeLimits(300, 200, 10000, 10000);
+	setResizeLimits(500, 500, 10000, 10000);
 
-	if (shouldReloadOnStartup)
+    if (!fileToLoad.getFullPathName().isEmpty())
+    {
+        ui->getEditorViewport()->loadState(fileToLoad);
+    }
+	else if (shouldReloadOnStartup)
 	{
-		File executable = File::getSpecialLocation(File::currentExecutableFile);
-		File executableDirectory = executable.getParentDirectory();
-		File file = executableDirectory.getChildFile("lastConfig.xml");
-
+		File file = getSavedStateDirectory().getChildFile("lastConfig.xml");
 		ui->getEditorViewport()->loadState(file);
 	}
 
@@ -97,10 +112,7 @@ MainWindow::~MainWindow()
 	UIComponent* ui = (UIComponent*) getContentComponent();
 	ui->disableDataViewport();
 
-	File executable = File::getSpecialLocation(File::currentExecutableFile);
-	File executableDirectory = executable.getParentDirectory();
-	File file = executableDirectory.getChildFile("lastConfig.xml");
-
+	File file = getSavedStateDirectory().getChildFile("lastConfig.xml");
 	ui->getEditorViewport()->saveState(file);
 
 	setMenuBar(0);
@@ -113,15 +125,19 @@ MainWindow::~MainWindow()
 
 void MainWindow::closeButtonPressed()
 {
+
+	JUCEApplication::getInstance()->systemRequestedQuit();
+
+}
+
+void MainWindow::shutDownGUI()
+{
 	if (audioComponent->callbacksAreActive())
 	{
 		audioComponent->endCallbacks();
 	}
 
 	processorGraph->disableProcessors();
-
-	JUCEApplication::getInstance()->systemRequestedQuit();
-
 }
 
 void MainWindow::saveWindowBounds()
@@ -130,9 +146,7 @@ void MainWindow::saveWindowBounds()
 	std::cout << "Saving window bounds." << std::endl;
 	std::cout << std::endl;
 
-	File executable = File::getSpecialLocation(File::currentExecutableFile);
-	File executableDirectory = executable.getParentDirectory();
-	File file = executableDirectory.getChildFile("windowState.xml");
+	File file = getSavedStateDirectory().getChildFile("windowState.xml");
 
 	XmlElement* xml = new XmlElement("MAINWINDOW");
 
@@ -178,11 +192,7 @@ void MainWindow::loadWindowBounds()
 	std::cout << "Loading window bounds." << std::endl;
 	std::cout << std::endl;
 
-	//File file = File::getCurrentWorkingDirectory().getChildFile("windowState.xml");
-
-	File executable = File::getSpecialLocation(File::currentExecutableFile);
-	File executableDirectory = executable.getParentDirectory();
-	File file = executableDirectory.getChildFile("windowState.xml");
+	File file = getSavedStateDirectory().getChildFile("windowState.xml");
 
 	XmlDocument doc(file);
 	XmlElement* xml = doc.getDocumentElement();

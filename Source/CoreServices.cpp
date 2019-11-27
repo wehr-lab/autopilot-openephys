@@ -29,7 +29,8 @@
 #include "Processors/RecordNode/RecordNode.h"
 #include "UI/EditorViewport.h"
 #include "UI/ControlPanel.h"
-
+#include "Processors/MessageCenter/MessageCenterEditor.h"
+#include "Processors/Events/Events.h"
 
 
 using namespace AccessClass;
@@ -37,117 +38,162 @@ using namespace AccessClass;
 
 namespace CoreServices
 {
-void updateSignalChain(GenericEditor* source)
-{
-    getEditorViewport()->makeEditorVisible(source, false, true);
-}
+	void updateSignalChain(GenericEditor* source)
+	{
+		getEditorViewport()->makeEditorVisible(source, false, true);
+	}
 
-bool getRecordingStatus()
-{
-    return getControlPanel()->recordButton->getToggleState();
-}
+	bool getRecordingStatus()
+	{
+		return getControlPanel()->recordButton->getToggleState();
+	}
 
-void setRecordingStatus(bool enable)
-{
-    getControlPanel()->setRecordState(enable);
-}
+	void setRecordingStatus(bool enable)
+	{
+		getControlPanel()->setRecordState(enable);
+	}
 
-bool getAcquisitionStatus()
-{
-	return getControlPanel()->getAcquisitionState();
-}
+	bool getAcquisitionStatus()
+	{
+		return getControlPanel()->getAcquisitionState();
+	}
 
-void setAcquisitionStatus(bool enable)
-{
-    getControlPanel()->setAcquisitionState(enable);
-}
+	void setAcquisitionStatus(bool enable)
+	{
+		getControlPanel()->setAcquisitionState(enable);
+	}
 
-void sendStatusMessage(const String& text)
-{
-    getBroadcaster()->sendActionMessage(text);
-}
+	void sendStatusMessage(const String& text)
+	{
+		getBroadcaster()->sendActionMessage(text);
+	}
 
-void sendStatusMessage(const char* text)
-{
-    getBroadcaster()->sendActionMessage(text);
-}
+	void sendStatusMessage(const char* text)
+	{
+		getBroadcaster()->sendActionMessage(text);
+	}
 
-void highlightEditor(GenericEditor* ed)
-{
-    getEditorViewport()->makeEditorVisible(ed);
-}
+	void highlightEditor(GenericEditor* ed)
+	{
+		getEditorViewport()->makeEditorVisible(ed);
+	}
 
-int64 getGlobalTimestamp()
-{
-    return getMessageCenter()->getTimestamp();
-}
+	juce::int64 getGlobalTimestamp()
+	{
+		return getProcessorGraph()->getGlobalTimestamp(false);
+	}
 
-int64 getSoftwareTimestamp()
-{
-	return getMessageCenter()->getTimestamp(true);
-}
+	juce::uint32 getGlobalTimestampSourceFullId()
+	{
+		return getProcessorGraph()->getGlobalTimestampSourceFullId();
+	}
 
-void setRecordingDirectory(String dir)
-{
-    getControlPanel()->setRecordingDirectory(dir);
-}
+	juce::int64 getSoftwareTimestamp()
+	{
+		return getProcessorGraph()->getGlobalTimestamp(true);
+	}
 
-void createNewRecordingDir()
-{
-   getControlPanel()->labelTextChanged(NULL);
-}
+	float getGlobalSampleRate()
+	{
+		return getProcessorGraph()->getGlobalSampleRate(false);
+	}
 
-void setPrependTextToRecordingDir(String text)
-{
-    getControlPanel()->setPrependText(text);
-}
+	float getSoftwareSampleRate()
+	{
+		return getProcessorGraph()->getGlobalSampleRate(true);
+	}
 
-void setAppendTextToRecordingDir(String text)
-{
-    getControlPanel()->setAppendText(text);
-}
+	void setRecordingDirectory(String dir)
+	{
+		getControlPanel()->setRecordingDirectory(dir);
+	}
 
-namespace RecordNode
-{
-void createNewrecordingDir()
-{
-    getProcessorGraph()->getRecordNode()->createNewDirectory();
-}
+	void createNewRecordingDir()
+	{
+		getControlPanel()->labelTextChanged(NULL);
+	}
 
-File getRecordingPath()
-{
-    return getProcessorGraph()->getRecordNode()->getDataDirectory();
-}
+	void setPrependTextToRecordingDir(String text)
+	{
+		getControlPanel()->setPrependText(text);
+	}
 
-int getRecordingNumber()
-{
-	return getProcessorGraph()->getRecordNode()->getRecordingNumber();
-}
+	void setAppendTextToRecordingDir(String text)
+	{
+		getControlPanel()->setAppendText(text);
+	}
 
-int getExperimentNumber()
-{
-	return getProcessorGraph()->getRecordNode()->getExperimentNumber();
-}
+	String getSelectedRecordEngineId()
+	{
+		return getControlPanel()->getSelectedRecordEngineId();
+	}
 
-void writeSpike(SpikeObject& spike, int electrodeIndex)
-{
-    getProcessorGraph()->getRecordNode()->writeSpike(spike, electrodeIndex);
-}
+	bool setSelectedRecordEngineId(String id)
+	{
+		return getControlPanel()->setSelectedRecordEngineId(id);
+	}
 
-void registerSpikeSource(GenericProcessor* processor)
-{
-    getProcessorGraph()->getRecordNode()->registerSpikeSource(processor);
-}
+	namespace RecordNode
+	{
+		void createNewrecordingDir()
+		{
+			getProcessorGraph()->getRecordNode()->createNewDirectory();
+		}
 
-int addSpikeElectrode(SpikeRecordInfo* elec)
-{
-    return getProcessorGraph()->getRecordNode()->addSpikeElectrode(elec);
-}
-};
+		File getRecordingPath()
+		{
+			return getProcessorGraph()->getRecordNode()->getDataDirectory();
+		}
 
-PLUGIN_API const char* getApplicationResource(const char* name, int& size)
-{
-	return BinaryData::getNamedResource(name, size);
-}
+		int getRecordingNumber()
+		{
+			return getProcessorGraph()->getRecordNode()->getRecordingNumber();
+		}
 
+		int getExperimentNumber()
+		{
+			return getProcessorGraph()->getRecordNode()->getExperimentNumber();
+		}
+
+		void writeSpike(const SpikeEvent* spike, const SpikeChannel* chan)
+		{
+			getProcessorGraph()->getRecordNode()->writeSpike(spike, chan);
+		}
+
+		void registerSpikeSource(GenericProcessor* processor)
+		{
+			getProcessorGraph()->getRecordNode()->registerSpikeSource(processor);
+		}
+
+		int addSpikeElectrode(const SpikeChannel* elec)
+		{
+			return getProcessorGraph()->getRecordNode()->addSpikeElectrode(elec);
+		}
+
+	};
+
+	const char* getApplicationResource(const char* name, int& size)
+	{
+		return BinaryData::getNamedResource(name, size);
+	}
+
+	File getDefaultUserSaveDirectory()
+	{
+#if defined(__APPLE__)
+		File dir = File::getSpecialLocation(File::userDocumentsDirectory).getChildFile("open-ephys");
+		if (!dir.isDirectory()) {
+			dir.createDirectory();
+		}
+		return std::move(dir);
+#else
+		return File::getCurrentWorkingDirectory();
+#endif
+	}
+
+	String getGUIVersion()
+	{
+#define XSTR_DEF(s) #s
+#define STR_DEF(s) XSTR_DEF(s)
+		return STR_DEF(JUCE_APP_VERSION);
+	}
 };
